@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Loan Admin Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Custom green/emerald theme
+                        primary: {
+                            '50': '#f0fdf4',
+                            '100': '#dcfce7',
+                            '200': '#bbf7d0',
+                            '300': '#86efac',
+                            '400': '#4ade80',
+                            '500': '#22c55e',
+                            '600': '#16a34a', // Main theme color
+                            '700': '#15803d',
+                            '800': '#166534',
+                            '900': '#14532d',
+                            '950': '#052e16',
+                        },
+                    }
+                },
+            },
+        };
+    </script>
+    <style>
+        /* Custom scrollbar for the activity history */
+        #activity-history::-webkit-scrollbar {
+            width: 6px;
+        }
+        #activity-history::-webkit-scrollbar-track {
+            background: #f1f5f9; /* gray-100 */
+            border-radius: 10px;
+        }
+        #activity-history::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* gray-400 */
+            border-radius: 10px;
+        }
+        #activity-history::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* gray-500 */
+        }
+
+        /* Show mobile labels */
+        @media (max-width: 767px) {
+            .app-row .mobile-label {
+                display: block;
+            }
+        }
+
+        /* Classes for the new active/inactive tabs */
+        .status-tab {
+            @apply px-4 py-2 font-medium rounded-md cursor-pointer text-sm transition-colors whitespace-nowrap;
+        }
+        .status-tab-active {
+            @apply bg-primary-600 text-white shadow-sm;
+        }
+        .status-tab-inactive {
+            @apply bg-white text-gray-700 hover:bg-gray-50 border border-gray-200;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased relative overflow-x-hidden">
+
+    <!-- Backdrop -->
+    <div id="backdrop" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity duration-300"></div>
+
+    <!-- Main Dashboard Content -->
+    <main id="dashboard" class="w-full min-h-screen p-4 md:p-8 transition-all duration-300">
+        
+        <!-- Header -->
+        <header class="mb-6 flex items-center gap-3">
+            <svg class="w-8 h-8 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a.969.969 0 00.933 1H13.5a1.5 1.5 0 001.5-1.5V6.75A1.5 1.5 0 0013.5 5.25h-3a1.5 1.5 0 00-1.5 1.5v11.25c0 .38.016.754.046 1.114M12 18c-3.314 0-6-2.686-6-6s2.686-6 6-6 6 2.686 6 6-2.686 6-6 6z" />
+            </svg>
+            <h1 class="text-3xl font-bold text-gray-900">Green Loan Admin Dashboard</h1>
+        </header>
+
+        <!-- Filter Bar -->
+        <nav class="mb-6 flex flex-col gap-4">
+            <!-- Search & Assignee Filter -->
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Search -->
+                <div class="relative flex-grow">
+                    <input type="text" placeholder="Search by App ID, Customer, EV Loan..." class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+                <!-- Filter by Assignee -->
+                <select class="rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 md:w-1/4">
+                    <option value="">All Assignees</option>
+                    <option value="customer">Customer</option>
+                    <option value="sarah_k">Sarah K.</option>
+                    <option value="mark_b">Mark B.</option>
+                    <option value: "referrer">Specialist Referrer</option>
+                    <option value="unassigned">Unassigned</option>
+                </select>
+            </div>
+            
+            <!-- Status Tabs -->
+            <div id="status-tabs-container" class="w-full overflow-x-auto pb-2">
+                <div id="status-tabs" class="flex flex-nowrap gap-2 items-center">
+                    <!-- Tabs will be injected by JS -->
+                </div>
+            </div>
+        </nav>
+
+        <!-- Application List -->
+        <section id="application-list" class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <!-- List Header (Desktop) -->
+            <div class="hidden md:grid md:grid-cols-5 gap-4 font-bold text-gray-500 text-sm uppercase p-5 border-b border-gray-200">
+                <div class="col-span-1">App ID</div>
+                <div class="col-span-1">Customer Name</div>
+                <div class="col-span-1">Application Type</div>
+                <div class="col-span-1">Status & Originator</div>
+                <div class="col-span-1">Assigned To</div>
+            </div>
+
+            <!-- Application Rows will be injected here by JavaScript -->
+
+        </section>
+    </main>
+
+    <!-- Side Panel (Initially hidden) -->
+    <aside id="detail-panel" class="fixed top-0 right-0 h-full w-full md:w-2/5 lg:w-1/3 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
+        
+        <!-- Panel Header -->
+        <header class="flex justify-between items-center p-5 border-b border-gray-200">
+            <h2 id="panel-header-title" class="text-xl font-bold text-gray-900">Application Details</h2>
+            <button id="close-panel" class="text-gray-500 hover:text-gray-800" aria-label="Close panel">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </header>
+
+        <!-- Panel Body -->
+        <div class="flex-grow p-6 overflow-y-auto" id="activity-history">
+            
+            <!-- Summary Box -->
+            <section class="summary bg-gray-50 rounded-lg p-5 mb-6 border border-gray-200">
+                <h3 id="panel-app-id" class="text-lg font-bold text-gray-900"></h3>
+                <p id="panel-loan-type" class="text-gray-600 mb-4"></p>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 font-medium">Current Status:</span>
+                        <span id="panel-status-badge"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 font-medium">Waiting on:</span>
+                        <span id="panel-waiting-on" class="font-semibold text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 font-medium">Requested by:</span>
+                        <span id="panel-requested-by" class="font-semibold text-gray-800"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="actions flex gap-3 mb-6">
+                <button class="flex-1 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">Add Internal Note</button>
+                <button class="flex-1 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">Assign to...</button>
+            </div>
+
+            <!-- Activity History -->
+            <section class="history">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Activity History</h3>
+                <ul id="panel-history-list" class="space-y-6 border-l-2 border-gray-200 ml-2">
+                    <!-- History items will be injected here -->
+                </ul>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // --- MOCK DATA ---
+        // This simulates the data you would get from your database.
+
+        // 1. Data for the main dashboard list
+        const applications = [
+            {
+                id: "102345",
+                customerName: "Jane Doe",
+                appType: "Solar Panel Loan",
+                status: "AWAITING_CUSTOMER_INFO", // Renamed
+                originator: "Approver",
+                actor: "Customer"
+            },
+            {
+                id: "102344",
+                customerName: "Robert Smith",
+                appType: "EV Charger Loan",
+                status: "RETURNED_TO_REVIEWER", // Renamed
+                originator: "Approver",
+                actor: "Sarah K."
+            },
+            {
+                id: "102343",
+                customerName: "Michael Chan",
+                appType: "Electric Vehicle Loan",
+                status: "PENDING_APPROVAL",
+                originator: "Reviewer",
+                actor: "Mark B."
+            },
+            {
+                id: "102342",
+                customerName: "Emily Chen",
+                appType: "Solar Panel Loan",
+                status: "RESUBMITTED",
+                originator: "Customer",
+                actor: "Sarah K."
+            },
+            {
+                id: "102341",
+                customerName: "David Lee",
+                appType: "EV Charger Loan",
+                status: "PENDING_REVIEW",
+                originator: "System",
+                actor: "(Unassigned)"
+            },
+            // --- New Statuses Added ---
+            {
+                id: "102340",
+                customerName: "Ana Garcia",
+                appType: "Home Insulation Loan",
+                status: "DRAFT",
+                originator: "Customer",
+                actor: "Customer"
+            },
+            {
+                id: "102346",
+                customerName: "Kenji Watanabe",
+                appType: "Electric Vehicle Loan",
+                status: "PENDING_REFERRAL",
+                originator: "Approver",
+                actor: "Specialist Referrer"
+            },
+            {
+                id: "102347",
+                customerName: "Sam Wilson",
+                appType: "Solar Panel Loan",
+                status: "AUTHORIZED",
+                originator: "Approver",
+                actor: "System"
+            },
+            {
+                id: "102348",
+                customerName: "Maria Hernandez",
+                appType: "Electric Vehicle Loan",
+                status: "DECLINED",
+                originator: "Referrer",
+                actor: "System"
+            },
+            {
+                id: "102349",
+                customerName: "Tom Ivanich",
+                appType: "Solar Panel Loan",
+                status: "FUNDED",
+                originator: "System",
+                actor: "System"
+            },
+            {
+                id: "102350",
+                customerName: "Fatima Al-Jamil",
+                appType: "EV Charger Loan",
+                status: "WITHDRAWN",
+                originator: "Customer",
+                actor: "System"
+            }
+        ];
+
+        // 2. Data for the slide-out detail panel
+        const applicationDetails = {
+            "102345": {
+                id: "102345",
+                customerName: "Jane Doe",
+                loanType: "Solar Panel Loan",
+                loanAmount: "$30,000",
+                status: "AWAITING_CUSTOMER_INFO",
+                waitingOn: "Customer",
+                requestedBy: "Mark B. (Approver)",
+                history: [
+                    {
+                        timestamp: "Today - 11:01 AM",
+                        action: "Status changed to 'Awaiting Customer Information'",
+                        note: "Note from Mark B. (Approver): 'Paystub from last month is missing. Please upload.'"
+                    },
+                    {
+                        timestamp: "Yesterday - 4:32 PM",
+                        action: "Status changed to 'Pending Approval'",
+                        note: "Reviewer (Sarah K.) approved and referred to Approver."
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 9:15 AM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102344": {
+                id: "102344",
+                customerName: "Robert Smith",
+                loanType: "EV Charger Loan",
+                loanAmount: "$2,500",
+                status: "RETURNED_TO_REVIEWER",
+                waitingOn: "Sarah K. (Reviewer)",
+                requestedBy: "Mark B. (Approver)",
+                history: [
+                    {
+                        timestamp: "Today - 9:15 AM",
+                        action: "Status changed to 'Pending Rework'",
+                        note: "Note from Mark B. (Approver): 'DTI ratio is borderline. Please double-check income calcs.'"
+                    },
+                    {
+                        timestamp: "Yesterday - 2:00 PM",
+                        action: "Status changed to 'Pending Approval'",
+                        note: "Reviewer (Sarah K.) approved and referred to Approver."
+                    },
+                    {
+                        timestamp: "Oct 25, 2025 - 10:00 AM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102343": {
+                id: "102343",
+                customerName: "Michael Chan",
+                loanType: "Electric Vehicle Loan",
+                loanAmount: "$55,000",
+                status: "PENDING_APPROVAL",
+                waitingOn: "Mark B. (Approver)",
+                requestedBy: "Sarah K. (Reviewer)",
+                history: [
+                    {
+                        timestamp: "Today - 8:30 AM",
+                        action: "Status changed to 'Pending Approval'",
+                        note: "Reviewer (Sarah K.) approved and referred to Approver."
+                    },
+                    {
+                        timestamp: "Yesterday - 1:00 PM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102342": {
+                id: "102342",
+                customerName: "Emily Chen",
+                loanType: "Solar Panel Loan",
+                loanAmount: "$22,000",
+                status: "RESUBMITTED",
+                waitingOn: "Sarah K. (Reviewer)",
+                requestedBy: "Customer",
+                history: [
+                    {
+                        timestamp: "Today - 7:05 AM",
+                        action: "Status changed to 'Resubmitted'",
+                        note: "Customer uploaded 2 new documents."
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 10:30 AM",
+                        action: "Status changed to 'Awaiting Customer Information'",
+                        note: "Note from Sarah K. (Reviewer): 'Please provide quote from solar installer.'"
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 9:00 AM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102341": {
+                id: "102341",
+                customerName: "David Lee",
+                loanType: "EV Charger Loan",
+                loanAmount: "$1,500",
+                status: "PENDING_REVIEW",
+                waitingOn: "(Unassigned)",
+                requestedBy: "System",
+                history: [
+                    {
+                        timestamp: "Yesterday - 5:00 PM",
+                        action: "Status changed to 'Pending Review'",
+                        note: "New application received and auto-assigned to the 'EV Charger' queue."
+                    }
+                ]
+            },
+            // --- New Status Details ---
+            "102340": {
+                id: "102340",
+                customerName: "Ana Garcia",
+                loanType: "Home Insulation Loan",
+                loanAmount: "$7,000",
+                status: "DRAFT",
+                waitingOn: "Customer",
+                requestedBy: "N/A",
+                history: [
+                    {
+                        timestamp: "Today - 11:30 AM",
+                        action: "Application 'Draft' created.",
+                        note: "Customer started application."
+                    }
+                ]
+            },
+            "102346": {
+                id: "102346",
+                customerName: "Kenji Watanabe",
+                loanType: "Electric Vehicle Loan",
+                loanAmount: "$78,000",
+                status: "PENDING_REFERRAL",
+                waitingOn: "Specialist Referrer",
+                requestedBy: "Mark B. (Approver)",
+                history: [
+                    {
+                        timestamp: "Today - 11:15 AM",
+                        action: "Status changed to 'Pending Referral'",
+                        note: "Note from Mark B. (Approver): 'Loan amount is over standard approval limit. Sending to senior credit for referral.'"
+                    },
+                    {
+                        timestamp: "Today - 10:00 AM",
+                        action: "Status changed to 'Pending Approval'",
+                        note: "Reviewer (Sarah K.) approved and referred to Approver."
+                    },
+                    {
+                        timestamp: "Yesterday - 3:00 PM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102347": {
+                id: "102347",
+                customerName: "Sam Wilson",
+                loanType: "Solar Panel Loan",
+                loanAmount: "$28,000",
+                status: "AUTHORIZED",
+                waitingOn: "System",
+                requestedBy: "Mark B. (Approver)",
+                history: [
+                    {
+                        timestamp: "Today - 11:10 AM",
+                        action: "Status changed to 'Authorized'",
+                        note: "Application fully approved by Mark B. (Approver). Loan documents are being generated."
+                    },
+                    {
+                        timestamp: "Yesterday - 1:00 PM",
+                        action: "Status changed to 'Pending Approval'",
+                        note: "Reviewer (Sarah K.) approved and referred to Approver."
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 8:00 AM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102348": {
+                id: "102348",
+                customerName: "Maria Hernandez",
+                loanType: "Electric Vehicle Loan",
+                loanAmount: "$62,000",
+                status: "DECLINED",
+                waitingOn: "N/A",
+                requestedBy: "Specialist Referrer",
+                history: [
+                    {
+                        timestamp: "Today - 10:45 AM",
+                        action: "Status changed to 'Declined'",
+                        note: "Note from Specialist Referrer: 'Debt-to-income ratio (55%) is too high given the requested loan amount.'"
+                    },
+                    {
+                        timestamp: "Yesterday - 11:00 AM",
+                        action: "Status changed to 'Pending Referral'",
+                        note: "Sent by Approver for specialist review."
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 1:00 PM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102349": {
+                id: "102349",
+                customerName: "Tom Ivanich",
+                loanType: "Solar Panel Loan",
+                loanAmount: "$19,000",
+                status: "FUNDED",
+                waitingOn: "N/A",
+                requestedBy: "System",
+                history: [
+                    {
+                        timestamp: "Today - 9:00 AM",
+                        action: "Status changed to 'Funded'",
+                        note: "Loan documents signed by customer. Funds disbursed to solar installer."
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 3:00 PM",
+                        action: "Status changed to 'Authorized'",
+                        note: "Application approved by Mark B. (Approver)."
+                    },
+                    {
+                        timestamp: "Oct 26, 2025 - 10:00 AM",
+                        action: "Application submitted by customer."
+                    }
+                ]
+            },
+            "102350": {
+                id: "102350",
+                customerName: "Fatima Al-Jamil",
+                loanType: "EV Charger Loan",
+                loanAmount: "$2,000",
+                status: "WITHDRAWN",
+                waitingOn: "N/A",
+                requestedBy: "Customer",
+                history: [
+                    {
+                        timestamp: "Today - 9:30 AM",
+                        action: "Status changed to 'Withdrawn'",
+                        note: "Customer called and requested to withdraw their application."
+                    },
+                    {
+                        timestamp: "Yesterday - 4:00 PM",
+                        action: "Status changed to 'Pending Review'",
+                        note: "Application submitted by customer."
+                    }
+                ]
+            }
+        };
+
+
+        // --- STATE ---
+        let currentStatusFilter = "ALL";
+        const statusFilters = [
+            { id: "ALL", text: "All Statuses" },
+            { id: "AWAITING_CUSTOMER_INFO", text: "Action Required" },
+            { id: "PENDING_REVIEW", text: "Pending Review" },
+            { id: "PENDING_APPROVAL", text: "Pending Approval" },
+            { id: "PENDING_REFERRAL", text: "Pending Referral" },
+            { id: "RETURNED_TO_REVIEWER", text: "Pending Rework" },
+            { id: "RESUBMITTED", text: "Resubmitted" },
+            { id: "DRAFT", text: "Draft" },
+            { id: "AUTHORIZED", text: "Authorized" },
+            { id: "FUNDED", text: "Funded" },
+            { id: "DECLINED", text: "Declined" },
+            { id: "WITHDRAWN", text: "Withdrawn" }
+        ];
+
+        // --- HELPER FUNCTIONS ---
+
+        /**
+         * Returns the correct Tailwind CSS classes for a status badge.
+         * @param {string} status - The internal status code.
+         * @returns {object} - Contains {text, classes} for the badge.
+         */
+        function getStatusBadge(status) {
+            const baseClasses = "py-1 px-3 rounded-full font-semibold text-xs inline-block";
+            switch (status) {
+                // Actionable
+                case "AWAITING_CUSTOMER_INFO":
+                    return { text: "ACTION REQUIRED", classes: `${baseClasses} bg-yellow-100 text-yellow-800` };
+                case "RETURNED_TO_REVIEWER":
+                    return { text: "PENDING REWORK", classes: `${baseClasses} bg-orange-100 text-orange-800` };
+                case "RESUBMITTED":
+                    return { text: "RESUBMITTED", classes: `${baseClasses} bg-green-100 text-green-800` };
+                
+                // Pending
+                case "PENDING_REVIEW":
+                    return { text: "PENDING REVIEW", classes: `${baseClasses} bg-gray-200 text-gray-800` };
+                case "PENDING_APPROVAL":
+                    return { text: "PENDING APPROVAL", classes: `${baseClasses} bg-blue-100 text-blue-800` };
+                case "PENDING_REFERRAL":
+                    return { text: "PENDING REFERRAL", classes: `${baseClasses} bg-purple-100 text-purple-800` };
+
+                // Terminal (Closed)
+                case "AUTHORIZED":
+                    return { text: "AUTHORIZED", classes: `${baseClasses} bg-emerald-100 text-emerald-800` };
+                case "FUNDED":
+                    return { text: "FUNDED", classes: `${baseClasses} bg-emerald-200 text-emerald-900` };
+                case "DECLINED":
+                    return { text: "DECLINED", classes: `${baseClasses} bg-red-100 text-red-800` };
+                
+                // Other
+                case "DRAFT":
+                    return { text: "DRAFT", classes: `${baseClasses} bg-gray-100 text-gray-700` };
+                case "WITHDRAWN":
+                    return { text: "WITHDRAWN", classes: `${baseClasses} bg-gray-100 text-gray-700` };
+                
+                default:
+                    return { text: status, classes: `${baseClasses} bg-gray-100 text-gray-700` };
+            }
+        }
+
+        /**
+         * Returns the human-readable text for the originator.
+         * @param {string} originator - The originator role (e.g., "Approver").
+         * @param {string} status - The current status code.
+         * @returns {string} - The display text.
+         */
+        function getOriginatorText(originator, status) {
+            // Handle terminal/start statuses first
+            if (status === "PENDING_REVIEW") return "New Application";
+            if (status === "DRAFT") return "Customer";
+            if (status === "AUTHORIZED") return `Approved by ${originator}`;
+            if (status === "FUNDED") return "System";
+            if (status === "DECLINED") return `Declined by ${originator}`;
+            if (status === "WITHDRAWN") return "Customer";
+
+            // Handle in-progress statuses
+            if (status === "RESUBMITTED") return "From Customer";
+            if (originator === "Approver") return "Requested by Approver";
+            if (originator === "Reviewer") return "Sent by Reviewer";
+            if (originator === "Referrer") return "Requested by Referrer";
+            return `By ${originator}`;
+        }
+
+        // --- CORE APPLICATION LOGIC ---
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const appListElement = document.getElementById("application-list");
+            const detailPanel = document.getElementById("detail-panel");
+            const backdrop = document.getElementById("backdrop");
+            const closePanelButton = document.getElementById("close-panel");
+            const statusTabsContainer = document.getElementById("status-tabs");
+
+            /**
+             * Renders the status filter tabs.
+             */
+            function renderStatusTabs() {
+                let html = "";
+                statusFilters.forEach(filter => {
+                    const isActive = filter.id === currentStatusFilter;
+                    const activeClass = isActive ? 'status-tab-active' : 'status-tab-inactive';
+                    html += `<button class="status-tab ${activeClass}" data-filter-id="${filter.id}">${filter.text}</button>`;
+                });
+                statusTabsContainer.innerHTML = html;
+                addTabClickListeners();
+            }
+
+            /**
+             * Renders the main list of applications based on the current filter.
+             */
+            function renderApplicationList() {
+                let html = `
+                    <!-- List Header (Mobile) -->
+                    <div class="md:hidden p-5 border-b border-gray-200">
+                        <h2 class="font-bold text-gray-500 text-sm uppercase">All Applications</h2>
+                    </div>
+                `;
+
+                const filteredApps = applications.filter(app => 
+                    currentStatusFilter === "ALL" || app.status === currentStatusFilter
+                ).sort((a, b) => a.id < b.id ? 1 : -1); // Sort by ID descending
+
+                if (filteredApps.length === 0) {
+                    html += `<div class="p-8 text-center text-gray-500">No applications match this status.</div>`;
+                }
+
+                filteredApps.forEach(app => {
+                    const badge = getStatusBadge(app.status);
+                    const originatorText = getOriginatorText(app.originator, app.status);
+
+                    html += `
+                    <div class="app-row block p-5 border-b border-gray-200 last:border-b-0 cursor-pointer hover:bg-gray-50 md:grid md:grid-cols-5 md:gap-4 md:items-center" data-app-id="${app.id}">
+                        
+                        <!-- Mobile View -->
+                        <div class="flex justify-between items-center md:hidden">
+                            <div>
+                                <div class="font-bold text-gray-800">${app.customerName}</div>
+                                <div class="text-sm text-gray-500">#${app.id}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="${badge.classes} max-w-[120px] truncate">${badge.text}</div>
+                                <div class="text-sm text-gray-500 mt-1">To: ${app.actor}</div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop View -->
+                        <div class="hidden md:block col-span-1 font-medium text-gray-800">#${app.id}</div>
+                        <div class="hidden md:block col-span-1 font-medium text-gray-800">${app.customerName}</div>
+                        <div class="hidden md:block col-span-1 text-gray-600">${app.appType}</div>
+                        <div class="hidden md:flex col-span-1 flex-col">
+                            <span class="${badge.classes} mb-1">${badge.text}</span>
+                            <small class="text-gray-500 text-xs">${originatorText}</small>
+                        </div>
+                        <div class="hidden md:block col-span-1 font-medium text-gray-800">${app.actor}</div>
+                    </div>
+                    `;
+                });
+                appListElement.innerHTML = html;
+                addListClickListeners();
+            }
+
+            /**
+             * Renders the details into the side panel.
+             * @param {object} data - The application detail object.
+             */
+            function renderPanel(data) {
+                const badge = getStatusBadge(data.status);
+
+                document.getElementById("panel-header-title").textContent = `Application #${data.id}`;
+                document.getElementById("panel-app-id").textContent = `${data.customerName}`;
+                document.getElementById("panel-loan-type").textContent = `${data.loanType} - ${data.loanAmount}`;
+                
+                document.getElementById("panel-status-badge").innerHTML = `<span class="${badge.classes}">${badge.text}</span>`;
+                document.getElementById("panel-waiting-on").textContent = data.waitingOn;
+                document.getElementById("panel-requested-by").textContent = data.requestedBy;
+
+                // Render history
+                const historyList = document.getElementById("panel-history-list");
+                let historyHtml = "";
+                data.history.forEach(item => {
+                    historyHtml += `
+                    <li class="relative pb-6">
+                        <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 bg-gray-300 rounded-full"></div>
+                        <div class="ml-4">
+                            <div class="text-xs text-gray-500 font-medium">${item.timestamp}</div>
+                            <div class="font-semibold text-sm text-gray-800">${item.action}</div>
+                            <p class="text-sm text-gray-600">${item.note || ''}</p>
+                        </div>
+                    </li>
+                    `;
+                });
+                // Add a final "empty" item to make the line look complete
+                historyHtml += `<li class="relative"><div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 bg-gray-300 rounded-full"></div></li>`;
+                
+                historyList.innerHTML = historyHtml;
+            }
+
+            /**
+             * Attaches click listeners to all application rows.
+             */
+            function addListClickListeners() {
+                document.querySelectorAll(".app-row").forEach(row => {
+                    row.addEventListener("click", () => {
+                        const appId = row.getAttribute("data-app-id");
+                        openPanel(appId);
+                    });
+                });
+            }
+
+            /**
+             * Attaches click listeners to the status tabs.
+             */
+            function addTabClickListeners() {
+                document.querySelectorAll(".status-tab").forEach(tab => {
+                    tab.addEventListener("click", () => {
+                        currentStatusFilter = tab.getAttribute("data-filter-id");
+                        // Re-render tabs to show active state
+                        renderStatusTabs();
+                        // Re-render the list based on the new filter
+                        renderApplicationList();
+                    });
+                });
+            }
+
+            /**
+             * Opens the side panel with data for the given app ID.
+             * @param {string} appId - The ID of the application to show.
+             */
+            function openPanel(appId) {
+                const data = applicationDetails[appId];
+                if (!data) {
+                    console.error("No details found for app ID:", appId);
+                    return;
+                }
+                
+                renderPanel(data);
+
+                // Animate panel in
+                detailPanel.classList.remove("translate-x-full");
+                
+                // Show backdrop
+                backdrop.classList.remove("hidden");
+                backdrop.classList.add("opacity-100");
+
+                // Prevent body scroll
+                document.body.classList.add("overflow-hidden");
+            }
+
+            /**
+             * Closes the side panel.
+             */
+            function closePanel() {
+                // Animate panel out
+                detailPanel.classList.add("translate-x-full");
+
+                // Hide backdrop
+                backdrop.classList.remove("opacity-100");
+                backdrop.classList.add("hidden");
+
+                // Restore body scroll
+                document.body.classList.remove("overflow-hidden");
+            }
+
+            // --- INITIALIZATION ---
+
+            // Initial render of the application list
+            renderStatusTabs();
+            renderApplicationList();
+
+            // Attach close listeners
+            closePanelButton.addEventListener("click", closePanel);
+            backdrop.addEventListener("click", closePanel);
+        });
+    </script>
+</body>
+</html>
