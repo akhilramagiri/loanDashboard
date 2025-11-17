@@ -29,6 +29,29 @@
                             '900': '#14532d',
                             '950': '#052e16',
                         },
+                        // Colors for Main Status badges
+                        status: {
+                            processing: {
+                                bg: '#e0f2fe', // blue-100
+                                text: '#0284c7' // blue-700
+                            },
+                            onhold: {
+                                bg: '#fef3c7', // yellow-100
+                                text: '#a16207' // yellow-700
+                            },
+                            decisioned: {
+                                bg: '#f3e8ff', // purple-100
+                                text: '#7e22ce' // purple-700
+                            },
+                            closed: {
+                                bg: '#dcfce7', // green-100
+                                text: '#16a34a' // green-600
+                            },
+                            pre: {
+                                bg: '#f3f4f6', // gray-100
+                                text: '#4b5563' // gray-600
+                            }
+                        }
                     }
                 },
             },
@@ -56,17 +79,6 @@
             .app-row .mobile-label {
                 display: block;
             }
-        }
-
-        /* Classes for the new active/inactive tabs */
-        .status-tab {
-            @apply px-4 py-2 font-medium rounded-md cursor-pointer text-sm transition-colors whitespace-nowrap;
-        }
-        .status-tab-active {
-            @apply bg-primary-600 text-white shadow-sm;
-        }
-        .status-tab-inactive {
-            @apply bg-white text-gray-700 hover:bg-gray-50 border border-gray-200;
         }
     </style>
 </head>
@@ -98,22 +110,37 @@
                     </div>
                 </div>
                 <!-- Filter by Assignee -->
-                <select class="rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 md:w-1/4">
+                <select class="rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 md:w-auto">
                     <option value="">All Assignees</option>
                     <option value="customer">Customer</option>
                     <option value="sarah_k">Sarah K.</option>
                     <option value="mark_b">Mark B.</option>
-                    <option value: "referrer">Specialist Referrer</option>
+                    <option value="referrer">Specialist Referrer</option>
                     <option value="unassigned">Unassigned</option>
+                    <option value="operations">Operations</option>
+                    <option value="finance">Finance</option>
                 </select>
             </div>
             
-            <!-- Status Tabs -->
-            <div id="status-tabs-container" class="w-full overflow-x-auto pb-2">
-                <div id="status-tabs" class="flex flex-nowrap gap-2 items-center">
-                    <!-- Tabs will be injected by JS -->
+            <!-- *** Level 1 & 2 Dropdown Filters *** -->
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Main Status Dropdown -->
+                <div class="flex-1">
+                    <label for="main-status-select" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="main-status-select" class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <!-- Options will be injected by JS -->
+                    </select>
+                </div>
+
+                <!-- Sub-Status Dropdown -->
+                <div class="flex-1">
+                    <label for="sub-status-select" class="block text-sm font-medium text-gray-700 mb-1">Sub-Status</label>
+                    <select id="sub-status-select" class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500" disabled>
+                        <!-- Options will be injected by JS -->
+                    </select>
                 </div>
             </div>
+
         </nav>
 
         <!-- Application List -->
@@ -123,7 +150,7 @@
                 <div class="col-span-1">App ID</div>
                 <div class="col-span-1">Customer Name</div>
                 <div class="col-span-1">Application Type</div>
-                <div class="col-span-1">Status & Originator</div>
+                <div class="col-span-1">Status</div>
                 <div class="col-span-1">Assigned To</div>
             </div>
 
@@ -184,485 +211,398 @@
     </aside>
 
     <script>
-        // --- MOCK DATA ---
-        // This simulates the data you would get from your database.
-
-        // 1. Data for the main dashboard list
+        // --- MOCK DATA (*** FULLY POPULATED ***) ---
         const applications = [
-            {
-                id: "102345",
-                customerName: "Jane Doe",
-                appType: "Solar Panel Loan",
-                status: "AWAITING_CUSTOMER_INFO", // Renamed
-                originator: "Approver",
-                actor: "Customer"
-            },
-            {
-                id: "102344",
-                customerName: "Robert Smith",
-                appType: "EV Charger Loan",
-                status: "RETURNED_TO_REVIEWER", // Renamed
-                originator: "Approver",
-                actor: "Sarah K."
-            },
-            {
-                id: "102343",
-                customerName: "Michael Chan",
-                appType: "Electric Vehicle Loan",
-                status: "PENDING_APPROVAL",
-                originator: "Reviewer",
-                actor: "Mark B."
-            },
-            {
-                id: "102342",
-                customerName: "Emily Chen",
-                appType: "Solar Panel Loan",
-                status: "RESUBMITTED",
-                originator: "Customer",
-                actor: "Sarah K."
-            },
-            {
-                id: "102341",
-                customerName: "David Lee",
-                appType: "EV Charger Loan",
-                status: "PENDING_REVIEW",
-                originator: "System",
-                actor: "(Unassigned)"
-            },
-            // --- New Statuses Added ---
-            {
-                id: "102340",
-                customerName: "Ana Garcia",
-                appType: "Home Insulation Loan",
-                status: "DRAFT",
-                originator: "Customer",
-                actor: "Customer"
-            },
-            {
-                id: "102346",
-                customerName: "Kenji Watanabe",
-                appType: "Electric Vehicle Loan",
-                status: "PENDING_REFERRAL",
-                originator: "Approver",
-                actor: "Specialist Referrer"
-            },
-            {
-                id: "102347",
-                customerName: "Sam Wilson",
-                appType: "Solar Panel Loan",
-                status: "AUTHORIZED",
-                originator: "Approver",
-                actor: "System"
-            },
-            {
-                id: "102348",
-                customerName: "Maria Hernandez",
-                appType: "Electric Vehicle Loan",
-                status: "DECLINED",
-                originator: "Referrer",
-                actor: "System"
-            },
-            {
-                id: "102349",
-                customerName: "Tom Ivanich",
-                appType: "Solar Panel Loan",
-                status: "FUNDED",
-                originator: "System",
-                actor: "System"
-            },
-            {
-                id: "102350",
-                customerName: "Fatima Al-Jamil",
-                appType: "EV Charger Loan",
-                status: "WITHDRAWN",
-                originator: "Customer",
-                actor: "System"
-            }
+            { id: "102340", customerName: "Ana Garcia", appType: "Home Insulation Loan", status: "DRAFT", originator: "Customer", actor: "Customer" },
+            { id: "102341", customerName: "David Lee", appType: "EV Charger Loan", status: "PENDING_REVIEW", originator: "System", actor: "(Unassigned)" },
+            { id: "102342", customerName: "Emily Chen", appType: "Solar Panel Loan", status: "RESUBMITTED", originator: "Customer", actor: "Sarah K." },
+            { id: "102343", customerName: "Michael Chan", appType: "Electric Vehicle Loan", status: "PENDING_APPROVAL", originator: "Reviewer", actor: "Mark B." },
+            { id: "102344", customerName: "Robert Smith", appType: "EV Charger Loan", status: "RETURNED_TO_REVIEWER", originator: "Approver", actor: "Sarah K." },
+            { id: "102345", customerName: "Jane Doe", appType: "Solar Panel Loan", status: "AWAITING_CUSTOMER_INFO", originator: "Approver", actor: "Customer" },
+            { id: "102346", customerName: "Kenji Watanabe", appType: "Electric Vehicle Loan", status: "PENDING_REFERRAL", originator: "Approver", actor: "Specialist Referrer" },
+            { id: "102348", customerName: "Maria Hernandez", appType: "Electric Vehicle Loan", status: "DECLINED", originator: "Referrer", actor: "System" },
+            
+            // --- NEW WORKFLOW ---
+            { id: "102353", customerName: "Nora Ephron", appType: "Solar Panel Loan", status: "APPROVAL_COMPLETE", originator: "Approver", actor: "System" },
+            { id: "102354", customerName: "Leo Tolstoy", appType: "Home Insulation Loan", status: "AWAITING_CONTRACT_SIGNATURE", originator: "System", actor: "Customer" },
+            { id: "102355", customerName: "Jane Austen", appType: "EV Charger Loan", status: "CONTRACTS_SIGNED", originator: "Customer", actor: "System" },
+            { id: "102356", customerName: "Oscar Wilde", appType: "Solar Panel Loan", status: "LOAN_CREATED", originator: "System", actor: "Operations" },
+            { id: "102352", customerName: "Charles Brown", appType: "EV Charger Loan", status: "READY_FOR_DISBURSEMENT", originator: "System", actor: "Finance" },
+            // --- END NEW WORKFLOW ---
+
+            { id: "102349", customerName: "Tom Ivanich", appType: "Solar Panel Loan", status: "FUNDED", originator: "System", actor: "System" },
+            { id: "102350", customerName: "Fatima Al-Jamil", appType: "EV Charger Loan", status: "WITHDRAWN", originator: "Customer", actor: "System" }
         ];
 
-        // 2. Data for the slide-out detail panel
         const applicationDetails = {
-            "102345": {
-                id: "102345",
-                customerName: "Jane Doe",
-                loanType: "Solar Panel Loan",
-                loanAmount: "$30,000",
-                status: "AWAITING_CUSTOMER_INFO",
-                waitingOn: "Customer",
-                requestedBy: "Mark B. (Approver)",
+            "102340": { id: "102340", customerName: "Ana Garcia", loanType: "Home Insulation Loan", loanAmount: "$7,000", status: "DRAFT", waitingOn: "Customer", requestedBy: "N/A", 
                 history: [
-                    {
-                        timestamp: "Today - 11:01 AM",
-                        action: "Status changed to 'Awaiting Customer Information'",
-                        note: "Note from Mark B. (Approver): 'Paystub from last month is missing. Please upload.'"
-                    },
-                    {
-                        timestamp: "Yesterday - 4:32 PM",
-                        action: "Status changed to 'Pending Approval'",
-                        note: "Reviewer (Sarah K.) approved and referred to Approver."
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 9:15 AM",
-                        action: "Application submitted by customer."
-                    }
+                    { timestamp: "Today - 11:30 AM", action: "Application 'Draft' created.", note: "Customer started application." }
+                ] 
+            },
+            "102341": { id: "102341", customerName: "David Lee", loanType: "EV Charger Loan", loanAmount: "$1,500", status: "PENDING_REVIEW", waitingOn: "(Unassigned)", requestedBy: "System", 
+                history: [
+                    { timestamp: "Yesterday - 5:00 PM", action: "Status changed to 'Pending Review'", note: "New application received and auto-assigned to the 'EV Charger' queue." }
+                ] 
+            },
+            "102342": { id: "102342", customerName: "Emily Chen", loanType: "Solar Panel Loan", loanAmount: "$22,000", status: "RESUBMITTED", waitingOn: "Sarah K. (Reviewer)", requestedBy: "Customer", 
+                history: [
+                    { timestamp: "Today - 7:05 AM", action: "Status changed to 'Resubmitted'", note: "Customer uploaded 2 new documents." },
+                    { timestamp: "Oct 26, 2025 - 10:30 AM", action: "Status changed to 'Awaiting Customer Information'", note: "Note from Sarah K. (Reviewer): 'Please provide quote from solar installer.'" },
+                    { timestamp: "Oct 26, 2025 - 9:00 AM", action: "Application submitted by customer." }
+                ] 
+            },
+            "102343": { id: "102343", customerName: "Michael Chan", loanType: "Electric Vehicle Loan", loanAmount: "$55,000", status: "PENDING_APPROVAL", waitingOn: "Mark B. (Approver)", requestedBy: "Sarah K. (Reviewer)", 
+                history: [
+                    { timestamp: "Today - 8:30 AM", action: "Status changed to 'Pending Approval'", note: "Reviewer (Sarah K.) approved and referred to Approver." },
+                    { timestamp: "Yesterday - 1:00 PM", action: "Application submitted by customer." }
+                ] 
+            },
+            "102344": { id: "102344", customerName: "Robert Smith", loanType: "EV Charger Loan", loanAmount: "$2,500", status: "RETURNED_TO_REVIEWER", waitingOn: "Sarah K. (Reviewer)", requestedBy: "Mark B. (Approver)", 
+                history: [
+                    { timestamp: "Today - 9:15 AM", action: "Status changed to 'Pending Rework'", note: "Note from Mark B. (Approver): 'DTI ratio is borderline. Please double-check income calcs.'" },
+                    { timestamp: "Yesterday - 2:00 PM", action: "Status changed to 'Pending Approval'", note: "Reviewer (Sarah K.) approved and referred to Approver." },
+                    { timestamp: "Oct 25, 2025 - 10:00 AM", action: "Application submitted by customer." }
+                ] 
+            },
+            "102345": { id: "102345", customerName: "Jane Doe", loanType: "Solar Panel Loan", loanAmount: "$30,000", status: "AWAITING_CUSTOMER_INFO", waitingOn: "Customer", requestedBy: "Mark B. (Approver)", 
+                history: [
+                    { timestamp: "Today - 11:01 AM", action: "Status changed to 'Awaiting Customer Info'", note: "Note from Mark B. (Approver): 'Paystub from last month is missing. Please upload.'" },
+                    { timestamp: "Yesterday - 4:32 PM", action: "Status changed to 'Pending Approval'", note: "Reviewer (Sarah K.) approved and referred to Approver." },
+                    { timestamp: "Oct 26, 2025 - 9:15 AM", action: "Application submitted by customer." }
+                ] 
+            },
+            "102346": { id: "102346", customerName: "Kenji Watanabe", loanType: "Electric Vehicle Loan", loanAmount: "$78,000", status: "PENDING_REFERRAL", waitingOn: "Specialist Referrer", requestedBy: "Mark B. (Approver)", 
+                history: [
+                    { timestamp: "Today - 11:15 AM", action: "Status changed to 'Pending Referral'", note: "Note from Mark B. (Approver): 'Loan amount is over standard approval limit. Sending to senior credit for referral.'" },
+                    { timestamp: "Today - 10:00 AM", action: "Status changed to 'Pending Approval'", note: "Reviewer (Sarah K.) approved and referred to Approver." },
+                    { timestamp: "Yesterday - 3:00 PM", action: "Application submitted by customer." }
+                ] 
+            },
+            "102348": { id: "102348", customerName: "Maria Hernandez", loanType: "Electric Vehicle Loan", loanAmount: "$62,000", status: "DECLINED", waitingOn: "N/A", requestedBy: "Specialist Referrer", 
+                history: [
+                    { timestamp: "Today - 10:45 AM", action: "Status changed to 'Declined'", note: "Note from Specialist Referrer: 'Debt-to-income ratio (55%) is too high given the requested loan amount.'" },
+                    { timestamp: "Yesterday - 11:00 AM", action: "Status changed to 'Pending Referral'", note: "Sent by Approver for specialist review." },
+                    { timestamp: "Oct 26, 2025 - 1:00 PM", action: "Application submitted by customer." }
+                ] 
+            },
+            
+            // --- NEW WORKFLOW DETAILS ---
+            "102353": { id: "102353", customerName: "Nora Ephron", loanType: "Solar Panel Loan", loanAmount: "$40,000", status: "APPROVAL_COMPLETE", waitingOn: "System", requestedBy: "Mark B. (Approver)",
+                history: [
+                    { timestamp: "Today - 3:00 PM", action: "Status changed to 'Approval Complete'", note: "Internal underwriting is complete. Triggering e-signature to customer." },
+                    { timestamp: "Today - 1:00 PM", action: "Status changed to 'Pending Approval'", note: "Reviewer (Sarah K.) approved and referred to Approver." }
                 ]
             },
-            "102344": {
-                id: "102344",
-                customerName: "Robert Smith",
-                loanType: "EV Charger Loan",
-                loanAmount: "$2,500",
-                status: "RETURNED_TO_REVIEWER",
-                waitingOn: "Sarah K. (Reviewer)",
-                requestedBy: "Mark B. (Approver)",
+            "102354": { id: "102354", customerName: "Leo Tolstoy", loanType: "Home Insulation Loan", loanAmount: "$12,000", status: "AWAITING_CONTRACT_SIGNATURE", waitingOn: "Customer", requestedBy: "System",
                 history: [
-                    {
-                        timestamp: "Today - 9:15 AM",
-                        action: "Status changed to 'Pending Rework'",
-                        note: "Note from Mark B. (Approver): 'DTI ratio is borderline. Please double-check income calcs.'"
-                    },
-                    {
-                        timestamp: "Yesterday - 2:00 PM",
-                        action: "Status changed to 'Pending Approval'",
-                        note: "Reviewer (Sarah K.) approved and referred to Approver."
-                    },
-                    {
-                        timestamp: "Oct 25, 2025 - 10:00 AM",
-                        action: "Application submitted by customer."
-                    }
+                    { timestamp: "Today - 3:01 PM", action: "Status changed to 'Awaiting Contract Signature'", note: "E-signature documents sent to customer." },
+                    { timestamp: "Today - 3:00 PM", action: "Status changed to 'Approval Complete'", note: "Internal underwriting is complete." }
                 ]
             },
-            "102343": {
-                id: "102343",
-                customerName: "Michael Chan",
-                loanType: "Electric Vehicle Loan",
-                loanAmount: "$55,000",
-                status: "PENDING_APPROVAL",
-                waitingOn: "Mark B. (Approver)",
-                requestedBy: "Sarah K. (Reviewer)",
+            "102355": { id: "102355", customerName: "Jane Austen", loanType: "EV Charger Loan", loanAmount: "$3,500", status: "CONTRACTS_SIGNED", waitingOn: "System", requestedBy: "Customer",
                 history: [
-                    {
-                        timestamp: "Today - 8:30 AM",
-                        action: "Status changed to 'Pending Approval'",
-                        note: "Reviewer (Sarah K.) approved and referred to Approver."
-                    },
-                    {
-                        timestamp: "Yesterday - 1:00 PM",
-                        action: "Application submitted by customer."
-                    }
+                    { timestamp: "Today - 3:15 PM", action: "Status changed to 'Contracts Signed'", note: "Contract e-signed by customer. Triggering API call to create loan in SOLVI." },
+                    { timestamp: "Today - 3:01 PM", action: "Status changed to 'Awaiting Contract Signature'", note: "E-signature documents sent to customer." }
                 ]
             },
-            "102342": {
-                id: "102342",
-                customerName: "Emily Chen",
-                loanType: "Solar Panel Loan",
-                loanAmount: "$22,000",
-                status: "RESUBMITTED",
-                waitingOn: "Sarah K. (Reviewer)",
-                requestedBy: "Customer",
+            "102356": { id: "102356", customerName: "Oscar Wilde", loanType: "Solar Panel Loan", loanAmount: "$33,000", status: "LOAN_CREATED", waitingOn: "Operations", requestedBy: "System",
                 history: [
-                    {
-                        timestamp: "Today - 7:05 AM",
-                        action: "Status changed to 'Resubmitted'",
-                        note: "Customer uploaded 2 new documents."
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 10:30 AM",
-                        action: "Status changed to 'Awaiting Customer Information'",
-                        note: "Note from Sarah K. (Reviewer): 'Please provide quote from solar installer.'"
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 9:00 AM",
-                        action: "Application submitted by customer."
-                    }
+                    { timestamp: "Today - 3:16 PM", action: "Status changed to 'Loan Created'", note: "Loan successfully created in SOLVI (Loan ID: S-88921). Activating pre-disbursement checklist." },
+                    { timestamp: "Today - 3:15 PM", action: "Status changed to 'Contracts Signed'", note: "Customer has successfully e-signed the loan contract." }
                 ]
             },
-            "102341": {
-                id: "102341",
-                customerName: "David Lee",
-                loanType: "EV Charger Loan",
-                loanAmount: "$1,500",
-                status: "PENDING_REVIEW",
-                waitingOn: "(Unassigned)",
-                requestedBy: "System",
+            "102352": { id: "102352", customerName: "Charles Brown", loanType: "EV Charger Loan", loanAmount: "$3,000", status: "READY_FOR_DISBURSEMENT", waitingOn: "Finance", requestedBy: "System",
                 history: [
-                    {
-                        timestamp: "Yesterday - 5:00 PM",
-                        action: "Status changed to 'Pending Review'",
-                        note: "New application received and auto-assigned to the 'EV Charger' queue."
-                    }
+                    { timestamp: "Today - 2:15 PM", action: "Status changed to 'Ready for Disbursement'", note: "All pre-disbursement checks are complete. Application moved to Finance queue for payment." },
+                    { timestamp: "Today - 1:00 PM", action: "Checklist: Installer Docs Verified", note: "Ops team verified installer photos and warranty." },
+                    { timestamp: "Yesterday - 3:00 PM", action: "Checklist: Customer Confirmed Installation", note: "Customer confirmed installation via portal." },
+                    { timestamp: "Nov 10, 2025 - 1:00 PM", action: "Status changed to 'Loan Created'", note: "Loan created in SOLVI." }
                 ]
             },
-            // --- New Status Details ---
-            "102340": {
-                id: "102340",
-                customerName: "Ana Garcia",
-                loanType: "Home Insulation Loan",
-                loanAmount: "$7,000",
-                status: "DRAFT",
-                waitingOn: "Customer",
-                requestedBy: "N/A",
+            // --- END NEW WORKFLOW ---
+            
+            "102349": { id: "102349", customerName: "Tom Ivanich", loanType: "Solar Panel Loan", loanAmount: "$19,000", status: "FUNDED", waitingOn: "N/A", requestedBy: "System", 
                 history: [
-                    {
-                        timestamp: "Today - 11:30 AM",
-                        action: "Application 'Draft' created.",
-                        note: "Customer started application."
-                    }
-                ]
+                    { timestamp: "Today - 9:00 AM", action: "Status changed to 'Funded'", note: "Loan documents signed by customer. Funds disbursed to solar installer." },
+                    { timestamp: "Oct 26, 2025 - 3:00 PM", action: "Status changed to 'Loan Created'", note: "Loan created in SOLVI." },
+                    { timestamp: "Oct 26, 2025 - 10:00 AM", action: "Application submitted by customer." }
+                ] 
             },
-            "102346": {
-                id: "102346",
-                customerName: "Kenji Watanabe",
-                loanType: "Electric Vehicle Loan",
-                loanAmount: "$78,000",
-                status: "PENDING_REFERRAL",
-                waitingOn: "Specialist Referrer",
-                requestedBy: "Mark B. (Approver)",
+            "102350": { id: "102350", customerName: "Fatima Al-Jamil", appType: "EV Charger Loan", loanAmount: "$2,000", status: "WITHDRAWN", waitingOn: "N/A", requestedBy: "Customer", 
                 history: [
-                    {
-                        timestamp: "Today - 11:15 AM",
-                        action: "Status changed to 'Pending Referral'",
-                        note: "Note from Mark B. (Approver): 'Loan amount is over standard approval limit. Sending to senior credit for referral.'"
-                    },
-                    {
-                        timestamp: "Today - 10:00 AM",
-                        action: "Status changed to 'Pending Approval'",
-                        note: "Reviewer (Sarah K.) approved and referred to Approver."
-                    },
-                    {
-                        timestamp: "Yesterday - 3:00 PM",
-                        action: "Application submitted by customer."
-                    }
-                ]
-            },
-            "102347": {
-                id: "102347",
-                customerName: "Sam Wilson",
-                loanType: "Solar Panel Loan",
-                loanAmount: "$28,000",
-                status: "AUTHORIZED",
-                waitingOn: "System",
-                requestedBy: "Mark B. (Approver)",
-                history: [
-                    {
-                        timestamp: "Today - 11:10 AM",
-                        action: "Status changed to 'Authorized'",
-                        note: "Application fully approved by Mark B. (Approver). Loan documents are being generated."
-                    },
-                    {
-                        timestamp: "Yesterday - 1:00 PM",
-                        action: "Status changed to 'Pending Approval'",
-                        note: "Reviewer (Sarah K.) approved and referred to Approver."
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 8:00 AM",
-                        action: "Application submitted by customer."
-                    }
-                ]
-            },
-            "102348": {
-                id: "102348",
-                customerName: "Maria Hernandez",
-                loanType: "Electric Vehicle Loan",
-                loanAmount: "$62,000",
-                status: "DECLINED",
-                waitingOn: "N/A",
-                requestedBy: "Specialist Referrer",
-                history: [
-                    {
-                        timestamp: "Today - 10:45 AM",
-                        action: "Status changed to 'Declined'",
-                        note: "Note from Specialist Referrer: 'Debt-to-income ratio (55%) is too high given the requested loan amount.'"
-                    },
-                    {
-                        timestamp: "Yesterday - 11:00 AM",
-                        action: "Status changed to 'Pending Referral'",
-                        note: "Sent by Approver for specialist review."
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 1:00 PM",
-                        action: "Application submitted by customer."
-                    }
-                ]
-            },
-            "102349": {
-                id: "102349",
-                customerName: "Tom Ivanich",
-                loanType: "Solar Panel Loan",
-                loanAmount: "$19,000",
-                status: "FUNDED",
-                waitingOn: "N/A",
-                requestedBy: "System",
-                history: [
-                    {
-                        timestamp: "Today - 9:00 AM",
-                        action: "Status changed to 'Funded'",
-                        note: "Loan documents signed by customer. Funds disbursed to solar installer."
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 3:00 PM",
-                        action: "Status changed to 'Authorized'",
-                        note: "Application approved by Mark B. (Approver)."
-                    },
-                    {
-                        timestamp: "Oct 26, 2025 - 10:00 AM",
-                        action: "Application submitted by customer."
-                    }
-                ]
-            },
-            "102350": {
-                id: "102350",
-                customerName: "Fatima Al-Jamil",
-                loanType: "EV Charger Loan",
-                loanAmount: "$2,000",
-                status: "WITHDRAWN",
-                waitingOn: "N/A",
-                requestedBy: "Customer",
-                history: [
-                    {
-                        timestamp: "Today - 9:30 AM",
-                        action: "Status changed to 'Withdrawn'",
-                        note: "Customer called and requested to withdraw their application."
-                    },
-                    {
-                        timestamp: "Yesterday - 4:00 PM",
-                        action: "Status changed to 'Pending Review'",
-                        note: "Application submitted by customer."
-                    }
-                ]
+                    { timestamp: "Today - 9:30 AM", action: "Status changed to 'Withdrawn'", note: "Customer called and requested to withdraw their application." },
+                    { timestamp: "Yesterday - 4:00 PM", action: "Status changed to 'Pending Review'", note: "Application submitted by customer." }
+                ] 
             }
         };
 
 
-        // --- STATE ---
-        let currentStatusFilter = "ALL";
-        const statusFilters = [
-            { id: "ALL", text: "All Statuses" },
-            { id: "AWAITING_CUSTOMER_INFO", text: "Action Required" },
-            { id: "PENDING_REVIEW", text: "Pending Review" },
-            { id: "PENDING_APPROVAL", text: "Pending Approval" },
-            { id: "PENDING_REFERRAL", text: "Pending Referral" },
-            { id: "RETURNED_TO_REVIEWER", text: "Pending Rework" },
-            { id: "RESUBMITTED", text: "Resubmitted" },
-            { id: "DRAFT", text: "Draft" },
-            { id: "AUTHORIZED", text: "Authorized" },
-            { id: "FUNDED", text: "Funded" },
-            { id: "DECLINED", text: "Declined" },
-            { id: "WITHDRAWN", text: "Withdrawn" }
-        ];
+        // --- STATE & FILTER LOGIC (*** UPDATED ***) ---
+        
+        // Master definition of all statuses and their relationships
+        const mainStatusMap = {
+            "ALL": { text: "All Statuses", subStatuses: ["ALL"] },
+            "PRE-SUBMISSION": { text: "Pre-Submission", subStatuses: ["ALL", "DRAFT"] },
+            "PROCESSING": { 
+                text: "Processing", 
+                subStatuses: [
+                    "ALL", "PENDING_REVIEW", "PENDING_APPROVAL", "PENDING_REFERRAL", 
+                    "RETURNED_TO_REVIEWER", "RESUBMITTED", "APPROVAL_COMPLETE", "CONTRACTS_SIGNED"
+                ] 
+            },
+            "ON HOLD": { 
+                text: "On Hold", 
+                subStatuses: ["ALL", "AWAITING_CUSTOMER_INFO", "AWAITING_CONTRACT_SIGNATURE"] 
+            },
+            "DECISIONED": { 
+                text: "Decisioned", 
+                subStatuses: ["ALL", "LOAN_CREATED", "READY_FOR_DISBURSEMENT", "DECLINED"] 
+            },
+            "CLOSED": { text: "Closed", subStatuses: ["ALL", "FUNDED", "WITHDRAWN"] }
+        };
 
-        // --- HELPER FUNCTIONS ---
+        // Sub-status display names
+        const subStatusDetails = {
+            "ALL": { text: "All" },
+            // Pre-Submission
+            "DRAFT": { text: "Draft" },
+            // Processing
+            "PENDING_REVIEW": { text: "Pending Review" },
+            "PENDING_APPROVAL": { text: "Pending Approval" },
+            "PENDING_REFERRAL": { text: "Pending Referral" },
+            "RETURNED_TO_REVIEWER": { text: "Pending Rework" },
+            "RESUBMITTED": { text: "Resubmitted" },
+            "APPROVAL_COMPLETE": { text: "Approval Complete" },
+            "CONTRACTS_SIGNED": { text: "Contracts Signed" },
+            // On Hold
+            "AWAITING_CUSTOMER_INFO": { text: "Action Required (Docs)" },
+            "AWAITING_CONTRACT_SIGNATURE": { text: "Action Required (E-Sign)" },
+            // Decisioned
+            "LOAN_CREATED": { text: "Loan Created (Waiting Checks)" },
+            "READY_FOR_DISBURSEMENT": { text: "Ready for Disbursement" },
+            "DECLINED": { text: "Declined" },
+            // Closed
+            "FUNDED": { text: "Funded" },
+            "WITHDRAWN": { text: "Withdrawn" }
+        };
 
-        /**
-         * Returns the correct Tailwind CSS classes for a status badge.
-         * @param {string} status - The internal status code.
-         * @returns {object} - Contains {text, classes} for the badge.
-         */
+        // Map to quickly find a sub-status's main status
+        const subStatusToMainStatus = {};
+        Object.entries(mainStatusMap).forEach(([mainStatus, { subStatuses }]) => {
+            subStatuses.forEach(subStatus => {
+                if (subStatus !== "ALL") {
+                    subStatusToMainStatus[subStatus] = mainStatus;
+                }
+            });
+        });
+
+        // Current filter state
+        let currentMainStatusFilter = "ALL";
+        let currentSubStatusFilter = "ALL";
+        
+        // --- HELPER FUNCTIONS (*** CORRECTED ***) ---
+
         function getStatusBadge(status) {
             const baseClasses = "py-1 px-3 rounded-full font-semibold text-xs inline-block";
             switch (status) {
-                // Actionable
-                case "AWAITING_CUSTOMER_INFO":
-                    return { text: "ACTION REQUIRED", classes: `${baseClasses} bg-yellow-100 text-yellow-800` };
-                case "RETURNED_TO_REVIEWER":
-                    return { text: "PENDING REWORK", classes: `${baseClasses} bg-orange-100 text-orange-800` };
-                case "RESUBMITTED":
-                    return { text: "RESUBMITTED", classes: `${baseClasses} bg-green-100 text-green-800` };
-                
-                // Pending
+                // Processing
                 case "PENDING_REVIEW":
-                    return { text: "PENDING REVIEW", classes: `${baseClasses} bg-gray-200 text-gray-800` };
+                    return { badgeText: "PENDING REVIEW", displayText: "Pending Review", classes: `${baseClasses} bg-gray-200 text-gray-800` };
                 case "PENDING_APPROVAL":
-                    return { text: "PENDING APPROVAL", classes: `${baseClasses} bg-blue-100 text-blue-800` };
+                    return { badgeText: "PENDING APPROVAL", displayText: "Pending Approval", classes: `${baseClasses} bg-blue-100 text-blue-800` };
                 case "PENDING_REFERRAL":
-                    return { text: "PENDING REFERRAL", classes: `${baseClasses} bg-purple-100 text-purple-800` };
-
-                // Terminal (Closed)
-                case "AUTHORIZED":
-                    return { text: "AUTHORIZED", classes: `${baseClasses} bg-emerald-100 text-emerald-800` };
-                case "FUNDED":
-                    return { text: "FUNDED", classes: `${baseClasses} bg-emerald-200 text-emerald-900` };
-                case "DECLINED":
-                    return { text: "DECLINED", classes: `${baseClasses} bg-red-100 text-red-800` };
+                    return { badgeText: "PENDING REFERRAL", displayText: "Pending Referral", classes: `${baseClasses} bg-purple-100 text-purple-800` };
+                case "RETURNED_TO_REVIEWER":
+                    return { badgeText: "PENDING REWORK", displayText: "Returned to Reviewer", classes: `${baseClasses} bg-orange-100 text-orange-800` };
+                case "RESUBMITTED":
+                    return { badgeText: "RESUBMITTED", displayText: "Resubmitted", classes: `${baseClasses} bg-green-100 text-green-800` };
+                case "APPROVAL_COMPLETE":
+                    return { badgeText: "APPROVAL COMPLETE", displayText: "Approval Complete", classes: `${baseClasses} bg-blue-200 text-blue-900` };
+                case "CONTRACTS_SIGNED":
+                    return { badgeText: "CONTRACTS SIGNED", displayText: "Contracts Signed", classes: `${baseClasses} bg-blue-200 text-blue-900` };
                 
-                // Other
-                case "DRAFT":
-                    return { text: "DRAFT", classes: `${baseClasses} bg-gray-100 text-gray-700` };
+                // On Hold
+                case "AWAITING_CUSTOMER_INFO":
+                    return { badgeText: "ACTION REQUIRED", displayText: "Awaiting Customer Info", classes: `${baseClasses} bg-yellow-100 text-yellow-800` };
+                case "AWAITING_CONTRACT_SIGNATURE":
+                    return { badgeText: "AWAITING E-SIGN", displayText: "Awaiting Contract Signature", classes: `${baseClasses} bg-yellow-100 text-yellow-800` };
+
+                // Decisioned
+                case "LOAN_CREATED":
+                    return { badgeText: "LOAN CREATED", displayText: "Loan Created (Waiting Checks)", classes: `${baseClasses} bg-emerald-100 text-emerald-800` };
+                case "READY_FOR_DISBURSEMENT":
+                    return { badgeText: "READY FOR DISBURSEMENT", displayText: "Ready for Disbursement", classes: `${baseClasses} bg-primary-200 text-primary-900 font-bold` };
+                case "DECLINED":
+                    return { badgeText: "DECLINED", displayText: "Declined", classes: `${baseClasses} bg-red-100 text-red-800` };
+
+                // Closed
+                case "FUNDED":
+                    return { badgeText: "FUNDED", displayText: "Funded", classes: `${baseClasses} bg-emerald-200 text-emerald-900` };
                 case "WITHDRAWN":
-                    return { text: "WITHDRAWN", classes: `${baseClasses} bg-gray-100 text-gray-700` };
+                    return { badgeText: "WITHDRAWN", displayText: "Withdrawn", classes: `${baseClasses} bg-gray-100 text-gray-700` };
+                
+                // Pre-Submission
+                case "DRAFT":
+                    return { badgeText: "DRAFT", displayText: "Draft", classes: `${baseClasses} bg-gray-100 text-gray-700` };
                 
                 default:
-                    return { text: status, classes: `${baseClasses} bg-gray-100 text-gray-700` };
+                    return { badgeText: status, displayText: status, classes: `${baseClasses} bg-gray-100 text-gray-700` };
+            }
+        }
+        
+        function getMainStatusInfo(subStatus) {
+            const colors = tailwind.config.theme.extend.colors.status;
+            const baseClasses = "px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block text-center";
+            
+            const mainStatus = subStatusToMainStatus[subStatus] || "UNKNOWN";
+
+            switch (mainStatus) {
+                case "PRE-SUBMISSION":
+                    return { text: "PRE-SUBMISSION", classes: `${baseClasses} bg-status-pre-bg text-status-pre-text` };
+                case "PROCESSING":
+                    return { text: "PROCESSING", classes: `${baseClasses} bg-status-processing-bg text-status-processing-text` };
+                case "ON HOLD":
+                    return { text: "ON HOLD", classes: `${baseClasses} bg-status-onhold-bg text-status-onhold-text` };
+                case "DECISIONED":
+                    return { text: "DECISIONED", classes: `${baseClasses} bg-status-decisioned-bg text-status-decisioned-text` };
+                case "CLOSED":
+                    return { text: "CLOSED", classes: `${baseClasses} bg-status-closed-bg text-status-closed-text` };
+                default:
+                    return { text: "UNKNOWN", classes: `${baseClasses} bg-gray-100 text-gray-600` };
             }
         }
 
-        /**
-         * Returns the human-readable text for the originator.
-         * @param {string} originator - The originator role (e.g., "Approver").
-         * @param {string} status - The current status code.
-         * @returns {string} - The display text.
-         */
         function getOriginatorText(originator, status) {
-            // Handle terminal/start statuses first
-            if (status === "PENDING_REVIEW") return "New Application";
-            if (status === "DRAFT") return "Customer";
-            if (status === "AUTHORIZED") return `Approved by ${originator}`;
-            if (status === "FUNDED") return "System";
-            if (status === "DECLINED") return `Declined by ${originator}`;
-            if (status === "WITHDRAWN") return "Customer";
-
-            // Handle in-progress statuses
-            if (status === "RESUBMITTED") return "From Customer";
-            if (originator === "Approver") return "Requested by Approver";
-            if (originator === "Reviewer") return "Sent by Reviewer";
-            if (originator === "Referrer") return "Requested by Referrer";
-            return `By ${originator}`;
+            switch(status) {
+                case "PENDING_REVIEW": return "New Application";
+                case "DRAFT": return "By Customer";
+                case "RESUBMITTED": return "From Customer";
+                case "WITHDRAWN": return "By Customer";
+                case "APPROVAL_COMPLETE": return `Approved by ${originator}`;
+                case "AWAITING_CONTRACT_SIGNATURE": return "E-Sign Sent by System";
+                case "CONTRACTS_SIGNED": return "E-Signed by Customer";
+                case "LOAN_CREATED": return "API Call to SOLVI";
+                case "READY_FOR_DISBURSEMENT": return "All checks complete";
+                case "FUNDED": return "System Processed";
+                case "DECLINED": return `Declined by ${originator}`;
+                default:
+                    if (originator === "Approver") return "Requested by Approver";
+                    if (originator === "Reviewer") return "Sent by Reviewer";
+                    if (originator === "Referrer") return "Requested by Referrer";
+                    return `By ${originator}`;
+            }
         }
 
-        // --- CORE APPLICATION LOGIC ---
+        // --- CORE APPLICATION LOGIC (Unchanged, all logic is data-driven) ---
 
         document.addEventListener("DOMContentLoaded", () => {
             const appListElement = document.getElementById("application-list");
             const detailPanel = document.getElementById("detail-panel");
             const backdrop = document.getElementById("backdrop");
             const closePanelButton = document.getElementById("close-panel");
-            const statusTabsContainer = document.getElementById("status-tabs");
+            const mainStatusSelect = document.getElementById("main-status-select");
+            const subStatusSelect = document.getElementById("sub-status-select");
+
+            // Apply the themed colors to the root for the new status badges
+            const root = document.documentElement;
+            const statusColors = tailwind.config.theme.extend.colors.status;
+            for (const status in statusColors) {
+                root.style.setProperty(`--color-status-${status}-bg`, statusColors[status].bg);
+                root.style.setProperty(`--color-status-${status}-text`, statusColors[status].text);
+            }
+            const dynamicStyle = document.createElement('style');
+            dynamicStyle.innerHTML = `
+                .bg-status-pre-bg { background-color: var(--color-status-pre-bg); }
+                .text-status-pre-text { color: var(--color-status-pre-text); }
+                .bg-status-processing-bg { background-color: var(--color-status-processing-bg); }
+                .text-status-processing-text { color: var(--color-status-processing-text); }
+                .bg-status-onhold-bg { background-color: var(--color-status-onhold-bg); }
+                .text-status-onhold-text { color: var(--color-status-onhold-text); }
+                .bg-status-decisioned-bg { background-color: var(--color-status-decisioned-bg); }
+                .text-status-decisioned-text { color: var(--color-status-decisioned-text); }
+                .bg-status-closed-bg { background-color: var(--color-status-closed-bg); }
+                .text-status-closed-text { color: var(--color-status-closed-text); }
+            `;
+            document.head.appendChild(dynamicStyle);
+
 
             /**
-             * Renders the status filter tabs.
+             * Renders the Level 1 Main Status dropdown.
              */
-            function renderStatusTabs() {
+            function renderMainStatusDropdown() {
                 let html = "";
-                statusFilters.forEach(filter => {
-                    const isActive = filter.id === currentStatusFilter;
-                    const activeClass = isActive ? 'status-tab-active' : 'status-tab-inactive';
-                    html += `<button class="status-tab ${activeClass}" data-filter-id="${filter.id}">${filter.text}</button>`;
+                Object.entries(mainStatusMap).forEach(([mainStatusId, { text }]) => {
+                    const isSelected = mainStatusId === currentMainStatusFilter;
+                    html += `<option value="${mainStatusId}" ${isSelected ? 'selected' : ''}>${text}</option>`;
                 });
-                statusTabsContainer.innerHTML = html;
-                addTabClickListeners();
+                mainStatusSelect.innerHTML = html;
             }
 
             /**
-             * Renders the main list of applications based on the current filter.
+             * Renders the Level 2 Sub-Status dropdown based on the main filter.
+             */
+            function renderSubStatusDropdown() {
+                const subStatusList = mainStatusMap[currentMainStatusFilter].subStatuses;
+                
+                // If only one sub-status ("ALL"), disable the dropdown
+                if (subStatusList.length <= 1) {
+                    subStatusSelect.innerHTML = `<option value="ALL">All</option>`;
+                    subStatusSelect.disabled = true;
+                    return;
+                }
+                
+                // Enable dropdown and populate options
+                subStatusSelect.disabled = false;
+                let html = "";
+                subStatusList.forEach(subStatusId => {
+                    const isActive = subStatusId === currentSubStatusFilter;
+                    
+                    let text = subStatusDetails[subStatusId].text;
+                    if (subStatusId === "ALL") {
+                        text = `All ${mainStatusMap[currentMainStatusFilter].text}`;
+                    }
+                    
+                    html += `<option value="${subStatusId}" ${isActive ? 'selected' : ''}>${text}</option>`;
+                });
+                subStatusSelect.innerHTML = html;
+            }
+
+            /**
+             * Renders the main list of applications based on both filters. (Unchanged)
              */
             function renderApplicationList() {
                 let html = `
-                    <!-- List Header (Mobile) -->
                     <div class="md:hidden p-5 border-b border-gray-200">
-                        <h2 class="font-bold text-gray-500 text-sm uppercase">All Applications</h2>
+                        <h2 class="font-bold text-gray-500 text-sm uppercase">Applications</h2>
                     </div>
                 `;
 
-                const filteredApps = applications.filter(app => 
-                    currentStatusFilter === "ALL" || app.status === currentStatusFilter
-                ).sort((a, b) => a.id < b.id ? 1 : -1); // Sort by ID descending
+                // Filter logic
+                const filteredApps = applications.filter(app => {
+                    // Main Status filter
+                    if (currentMainStatusFilter !== "ALL") {
+                        const appMainStatus = subStatusToMainStatus[app.status];
+                        if (appMainStatus !== currentMainStatusFilter) {
+                            return false;
+                        }
+                    }
+                    // Sub-Status filter
+                    if (currentSubStatusFilter !== "ALL") {
+                        if (app.status !== currentSubStatusFilter) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }).sort((a, b) => a.id < b.id ? 1 : -1);
 
                 if (filteredApps.length === 0) {
-                    html += `<div class="p-8 text-center text-gray-500">No applications match this status.</div>`;
+                    html += `<div class="p-8 text-center text-gray-500">No applications match the selected filters.</div>`;
                 }
 
                 filteredApps.forEach(app => {
-                    const badge = getStatusBadge(app.status);
+                    const mainStatus = getMainStatusInfo(app.status);
+                    const subStatus = getStatusBadge(app.status); 
                     const originatorText = getOriginatorText(app.originator, app.status);
 
                     html += `
@@ -675,8 +615,8 @@
                                 <div class="text-sm text-gray-500">#${app.id}</div>
                             </div>
                             <div class="text-right">
-                                <div class="${badge.classes} max-w-[120px] truncate">${badge.text}</div>
-                                <div class="text-sm text-gray-500 mt-1">To: ${app.actor}</div>
+                                <span class="${mainStatus.classes} max-w-[120px] truncate">${mainStatus.text}</span>
+                                <div class="text-sm text-gray-500 mt-1">${subStatus.displayText}</div>
                             </div>
                         </div>
 
@@ -684,9 +624,11 @@
                         <div class="hidden md:block col-span-1 font-medium text-gray-800">#${app.id}</div>
                         <div class="hidden md:block col-span-1 font-medium text-gray-800">${app.customerName}</div>
                         <div class="hidden md:block col-span-1 text-gray-600">${app.appType}</div>
-                        <div class="hidden md:flex col-span-1 flex-col">
-                            <span class="${badge.classes} mb-1">${badge.text}</span>
-                            <small class="text-gray-500 text-xs">${originatorText}</small>
+                        
+                        <div class="hidden md:flex col-span-1 flex-col justify-center">
+                            <span class="${mainStatus.classes}">${mainStatus.text}</span>
+                            <span class="font-medium text-gray-800 text-sm mt-1.5">${subStatus.displayText}</span>
+                            <small class="text-gray-500 text-xs italic">${originatorText}</small>
                         </div>
                         <div class="hidden md:block col-span-1 font-medium text-gray-800">${app.actor}</div>
                     </div>
@@ -697,8 +639,7 @@
             }
 
             /**
-             * Renders the details into the side panel.
-             * @param {object} data - The application detail object.
+             * Renders the details into the side panel. (Unchanged)
              */
             function renderPanel(data) {
                 const badge = getStatusBadge(data.status);
@@ -707,11 +648,10 @@
                 document.getElementById("panel-app-id").textContent = `${data.customerName}`;
                 document.getElementById("panel-loan-type").textContent = `${data.loanType} - ${data.loanAmount}`;
                 
-                document.getElementById("panel-status-badge").innerHTML = `<span class="${badge.classes}">${badge.text}</span>`;
+                document.getElementById("panel-status-badge").innerHTML = `<span class="${badge.classes}">${badge.badgeText}</span>`;
                 document.getElementById("panel-waiting-on").textContent = data.waitingOn;
                 document.getElementById("panel-requested-by").textContent = data.requestedBy;
 
-                // Render history
                 const historyList = document.getElementById("panel-history-list");
                 let historyHtml = "";
                 data.history.forEach(item => {
@@ -726,14 +666,13 @@
                     </li>
                     `;
                 });
-                // Add a final "empty" item to make the line look complete
                 historyHtml += `<li class="relative"><div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 bg-gray-300 rounded-full"></div></li>`;
                 
                 historyList.innerHTML = historyHtml;
             }
 
             /**
-             * Attaches click listeners to all application rows.
+             * Attaches click listeners to all application rows. (Unchanged)
              */
             function addListClickListeners() {
                 document.querySelectorAll(".app-row").forEach(row => {
@@ -745,23 +684,26 @@
             }
 
             /**
-             * Attaches click listeners to the status tabs.
+             * Attaches change listener to the Main Status (L1) dropdown.
              */
-            function addTabClickListeners() {
-                document.querySelectorAll(".status-tab").forEach(tab => {
-                    tab.addEventListener("click", () => {
-                        currentStatusFilter = tab.getAttribute("data-filter-id");
-                        // Re-render tabs to show active state
-                        renderStatusTabs();
-                        // Re-render the list based on the new filter
-                        renderApplicationList();
-                    });
-                });
-            }
+            mainStatusSelect.addEventListener("change", (e) => {
+                currentMainStatusFilter = e.target.value;
+                currentSubStatusFilter = "ALL"; // Reset sub-filter
+                renderSubStatusDropdown(); // Update L2 dropdown
+                renderApplicationList();
+            });
+            
+            /**
+             * Attaches change listener to the Sub-Status (L2) dropdown.
+             */
+            subStatusSelect.addEventListener("change", (e) => {
+                currentSubStatusFilter = e.target.value;
+                renderApplicationList();
+            });
+
 
             /**
-             * Opens the side panel with data for the given app ID.
-             * @param {string} appId - The ID of the application to show.
+             * Opens the side panel with data for the given app ID. (Unchanged)
              */
             function openPanel(appId) {
                 const data = applicationDetails[appId];
@@ -771,37 +713,25 @@
                 }
                 
                 renderPanel(data);
-
-                // Animate panel in
                 detailPanel.classList.remove("translate-x-full");
-                
-                // Show backdrop
                 backdrop.classList.remove("hidden");
                 backdrop.classList.add("opacity-100");
-
-                // Prevent body scroll
                 document.body.classList.add("overflow-hidden");
             }
 
             /**
-             * Closes the side panel.
-             */
+            * Closes the side panel. (Unchanged)
+            */
             function closePanel() {
-                // Animate panel out
                 detailPanel.classList.add("translate-x-full");
-
-                // Hide backdrop
                 backdrop.classList.remove("opacity-100");
                 backdrop.classList.add("hidden");
-
-                // Restore body scroll
                 document.body.classList.remove("overflow-hidden");
             }
 
             // --- INITIALIZATION ---
-
-            // Initial render of the application list
-            renderStatusTabs();
+            renderMainStatusDropdown();
+            renderSubStatusDropdown();
             renderApplicationList();
 
             // Attach close listeners
